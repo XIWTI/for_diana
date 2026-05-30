@@ -1,0 +1,19 @@
+{
+  "name": "Love",
+  "short_name": "Love",
+  "description": "Автономная романтичная аркада с музыкой, играми, hearts и подарком.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#130d16",
+  "theme_color": "#140d18",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/love-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

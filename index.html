@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#140d18" />
+    <title>Love</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="icons/love-icon.svg" type="image/svg+xml" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Love" />
+    <link rel="stylesheet" href="styles.css?v=4" />
+  </head>
+  <body>
+    <canvas id="ambientCanvas" aria-hidden="true"></canvas>
+
+    <main id="app" class="app">
+      <section id="proposalGate" class="proposal-gate">
+        <div class="proposal-shell">
+          <p class="kicker">только один важный вопрос</p>
+          <h1>Ты будешь моей девушкой?</h1>
+          <p class="proposal-copy">После ответа откроется маленькая вселенная игр, музыки и сердечек.</p>
+          <div class="proposal-actions">
+            <button id="yesBtn" class="primary-btn big">Да</button>
+            <button id="noBtn" class="ghost-btn runaway">Нет</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="gameApp" class="game-app hidden" aria-live="polite">
+        <header class="topbar">
+          <button class="brand" data-view="home" aria-label="Домой">
+            <span class="brand-mark">L</span>
+            <span>
+              <strong>Love</strong>
+              <small id="timeMood">day Mode</small>
+            </span>
+          </button>
+
+          <div class="hearts-pill" aria-label="Баланс hearts">
+            <span>♥</span>
+            <strong id="heartCount">0 hearts</strong>
+          </div>
+
+          <nav class="nav-tabs" aria-label="Разделы">
+            <button class="tab active" data-view="home">Главная</button>
+            <button class="tab" data-view="games">Игры</button>
+            <button class="tab" data-view="quests">Задания</button>
+            <button class="tab" data-view="rewards">Награды</button>
+            <button class="tab" data-view="shop">Магазин</button>
+            <button class="tab" data-view="gift">Подарок</button>
+            <button class="tab" data-view="settings">Настройки</button>
+          </nav>
+        </header>
+
+        <section id="homeView" class="view active">
+          <div class="hero-panel">
+            <div>
+              <p class="kicker">личный аркадный клуб</p>
+              <h2>Собирай hearts, играй и открывай маленькие награды.</h2>
+              <p id="secretMessage" class="hero-note"></p>
+              <div class="hero-actions">
+                <button class="primary-btn" data-view="games">Играть</button>
+                <button class="soft-btn" data-view="rewards">Награды</button>
+              </div>
+            </div>
+            <div class="gift-orb" aria-hidden="true">
+              <span id="orbPercent">♥</span>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="panel compact">
+              <h3>Сегодня</h3>
+              <div id="dailyPreview" class="task-list"></div>
+            </article>
+            <article class="panel compact">
+              <h3>Достижения</h3>
+              <div id="achievementPreview" class="achievement-list"></div>
+            </article>
+            <article class="panel compact">
+              <h3>Последняя награда</h3>
+              <p id="lastReward" class="muted">Пока наград нет. Самое приятное впереди.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="gamesView" class="view">
+          <div class="section-title">
+            <p class="kicker">выбери игру</p>
+            <h2>Игры на hearts</h2>
+          </div>
+          <div class="game-grid">
+            <button class="game-card" data-game="memory">
+              <span class="game-icon">♡</span>
+              <strong>Memory Love</strong>
+              <small>3 уровня сложности</small>
+              <em>50-420 hearts</em>
+            </button>
+            <button class="game-card" data-game="puzzle">
+              <span class="game-icon">◇</span>
+              <strong>Пятнашки</strong>
+              <small>3x3, 4x4 и 5x5</small>
+              <em>80-760 hearts</em>
+            </button>
+            <button class="game-card" data-game="quiz">
+              <span class="game-icon">?</span>
+              <strong>Викторина</strong>
+              <small>Можно пройти один раз</small>
+              <em>до 1500 hearts</em>
+            </button>
+            <button class="game-card" data-game="chess">
+              <span class="game-icon">♛</span>
+              <strong>Шахматы</strong>
+              <small>Выбор режима, стороны и силы</small>
+              <em>120-1400 hearts</em>
+            </button>
+          </div>
+
+          <div id="gameStage" class="game-stage"></div>
+        </section>
+
+        <section id="questsView" class="view">
+          <div class="section-title">
+            <p class="kicker">ежедневные цели</p>
+            <h2>Daily Tasks</h2>
+          </div>
+          <div id="dailyTasks" class="task-list wide"></div>
+          <div class="section-title spaced">
+            <p class="kicker">коллекция</p>
+            <h2>Achievements</h2>
+          </div>
+          <div id="achievements" class="achievement-grid"></div>
+        </section>
+
+        <section id="rewardsView" class="view">
+          <div class="section-title">
+            <p class="kicker">то, что можно забрать</p>
+            <h2>Награды</h2>
+          </div>
+          <div class="reward-layout">
+            <article class="panel wheel-panel">
+              <div class="section-title mini">
+                <p class="kicker">1 раз в неделю</p>
+                <h3>Колесо фортуны</h3>
+              </div>
+              <div id="wheel" class="wheel" aria-hidden="true"></div>
+              <button id="spinWheelBtn" class="primary-btn">Крутить</button>
+              <p id="wheelStatus" class="muted"></p>
+            </article>
+            <div>
+              <div id="rewardList" class="reward-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="shopView" class="view">
+          <div class="section-title">
+            <p class="kicker">магазин</p>
+            <h2>Награды за hearts</h2>
+          </div>
+          <div id="shopList" class="shop-grid"></div>
+        </section>
+
+        <section id="giftView" class="view">
+          <div id="giftPanel" class="gift-panel">
+            <p class="kicker">главная цель</p>
+            <h2 id="giftTitle">Первый подарок ждёт тебя в разделе награды.</h2>
+            <p id="giftText">После получения здесь сохранится дата и время, чтобы этот момент остался внутри приложения.</p>
+            <div id="giftStamp" class="gift-stamp"></div>
+            <div id="secretGiftPanel" class="secret-gift hidden">
+              <h3>Секретный подарок</h3>
+              <p>Напиши мне, чтобы забрать его.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="settingsView" class="view">
+          <div class="section-title">
+            <p class="kicker">управление</p>
+            <h2>Настройки</h2>
+          </div>
+          <div class="settings-grid">
+            <div class="music-player panel">
+              <div class="settings-tabs">
+                <button class="chip active" data-settings-tab="tracks">Саундтреки</button>
+                <button id="messagesTabBtn" class="chip hidden" data-settings-tab="messages">Сообщения</button>
+              </div>
+
+              <div id="tracksSettings" class="settings-pane active">
+                <div class="track-display">
+                  <span id="trackName">Трек не выбран</span>
+                  <small id="trackStatus">нажми play</small>
+                </div>
+                <div class="player-controls">
+                  <button id="prevTrack" class="icon-btn" aria-label="Предыдущий трек">‹</button>
+                  <button id="playPause" class="primary-btn">Play</button>
+                  <button id="nextTrack" class="icon-btn" aria-label="Следующий трек">›</button>
+                  <button id="shuffleBtn" class="soft-btn">Shuffle</button>
+                  <button id="repeatBtn" class="soft-btn">Repeat</button>
+                </div>
+                <label class="range-label">
+                  Громкость
+                  <input id="volumeRange" type="range" min="0" max="100" value="55" />
+                </label>
+                <div class="toggle-row">
+                  <label><input id="musicEnabledToggle" type="checkbox" /> Музыка</label>
+                  <label><input id="sfxEnabledToggle" type="checkbox" /> Звуки приложения</label>
+                </div>
+                <div id="trackList" class="track-list"></div>
+              </div>
+
+              <div id="messagesSettings" class="settings-pane">
+                <h3>Сообщение</h3>
+                <p class="muted">Здесь откроется твоё голосовое сообщение после секретного промокода.</p>
+                <audio controls src="music/voice-message.mp3"></audio>
+              </div>
+            </div>
+
+            <div class="panel settings-card">
+              <h3>Промокоды</h3>
+              <div class="promo-row">
+                <input id="promoInput" type="text" placeholder="Введите промокод" />
+                <button id="applyPromoBtn" class="primary-btn">OK</button>
+              </div>
+              <p id="promoStatus" class="muted">Промокод можно использовать только один раз, если он одноразовый.</p>
+              <button id="resetProgressBtn" class="danger-btn">Сбросить прогресс</button>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div id="rewardToast" class="reward-toast" aria-live="assertive"></div>
+    <div id="modalRoot" class="modal-root hidden"></div>
+    <audio id="audioPlayer" preload="metadata"></audio>
+    <script src="app.js?v=4"></script>
+  </body>
+</html>
