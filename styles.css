@@ -526,6 +526,7 @@ button:hover {
 }
 
 .wheel-panel {
+  position: relative;
   display: grid;
   justify-items: center;
   gap: 16px;
@@ -533,6 +534,7 @@ button:hover {
 }
 
 .wheel {
+  position: relative;
   width: min(280px, 80vw);
   aspect-ratio: 1;
   border: 12px solid rgba(255, 255, 255, 0.14);
@@ -540,6 +542,54 @@ button:hover {
   background:
     conic-gradient(from 15deg, var(--rose) 0 33%, var(--gold) 33% 66%, var(--mint) 66% 100%);
   box-shadow: var(--shadow);
+  transition: transform 3.2s cubic-bezier(0.12, 0.78, 0.14, 1);
+}
+
+.wheel::after {
+  content: "";
+  position: absolute;
+  inset: 38%;
+  border-radius: 50%;
+  background: rgba(18, 12, 22, 0.9);
+  box-shadow: inset 0 0 22px rgba(255, 255, 255, 0.12);
+}
+
+.wheel-pointer {
+  position: relative;
+  z-index: 2;
+  width: 0;
+  height: 0;
+  margin-bottom: -20px;
+  border-left: 18px solid transparent;
+  border-right: 18px solid transparent;
+  border-top: 34px solid var(--ink);
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.32));
+}
+
+.wheel-label {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 50%;
+  width: 42%;
+  color: #20141e;
+  font-size: clamp(0.68rem, 2.4vw, 0.88rem);
+  font-weight: 950;
+  line-height: 1.1;
+  text-align: center;
+  transform-origin: 0 0;
+}
+
+.wheel-label-0 {
+  transform: rotate(75deg) translate(18%, -128%) rotate(-75deg);
+}
+
+.wheel-label-1 {
+  transform: rotate(195deg) translate(18%, -128%) rotate(-195deg);
+}
+
+.wheel-label-2 {
+  transform: rotate(315deg) translate(18%, -128%) rotate(-315deg);
 }
 
 .settings-tabs,

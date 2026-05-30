@@ -42,6 +42,7 @@ const defaultState = {
   rewards: [],
   shopPurchases: {},
   wheelLastSpin: null,
+  wheelRotation: 0,
   achievements: {},
   dailies: {
     date: TODAY,
@@ -111,6 +112,14 @@ const chessLevelLabels = {
   3: "3 средний",
   4: "4 эксперт",
   5: "5 супер сильный",
+};
+
+const chessStyles = {
+  balanced: { label: "Сбалансированный", depthBonus: 0, random: 10, attack: 1, defense: 1, material: 1 },
+  attacker: { label: "Атакующий", depthBonus: 0, random: 8, attack: 1.35, defense: 0.85, material: 0.95 },
+  defender: { label: "Защитник", depthBonus: 0, random: 6, attack: 0.9, defense: 1.35, material: 1.05 },
+  tactician: { label: "Тактик", depthBonus: 1, random: 2, attack: 1.15, defense: 1.05, material: 1.15 },
+  risky: { label: "Авантюрист", depthBonus: -1, random: 18, attack: 1.55, defense: 0.65, material: 0.85 },
 };
 
 function loadState() {
@@ -670,7 +679,7 @@ function claimReward(id) {
 function renderShop() {
   const list = $("#shopList");
   if (!list) return;
-  list.innerHTML = shopItems.map((item) => {
+  list.innerHTML = [...shopItems].sort((a, b) => a.price - b.price).map((item) => {
     const bought = state.shopPurchases[item.id] || 0;
     const soldOut = item.limit !== null && bought >= item.limit;
     return `
@@ -716,7 +725,17 @@ function buyShopItem(item) {
 function renderWheel() {
   const status = $("#wheelStatus");
   const button = $("#spinWheelBtn");
+  const wheel = $("#wheel");
   if (!status || !button) return;
+  if (wheel) {
+    wheel.style.transform = `rotate(${state.wheelRotation || 0}deg)`;
+    wheel.innerHTML = wheelRewards.map((reward, index) => `
+      <span class="wheel-label wheel-label-${index}">${reward}</span>
+    `).join("");
+  }
+  if (wheel && !wheel.parentElement.querySelector(".wheel-pointer")) {
+    wheel.insertAdjacentHTML("beforebegin", `<span class="wheel-pointer" aria-hidden="true"></span>`);
+  }
   const last = state.wheelLastSpin ? new Date(state.wheelLastSpin).getTime() : 0;
   const canSpin = !last || Date.now() - last >= WEEK_MS;
   button.disabled = !canSpin;
@@ -731,12 +750,26 @@ function renderWheel() {
 function spinWheel() {
   const last = state.wheelLastSpin ? new Date(state.wheelLastSpin).getTime() : 0;
   if (last && Date.now() - last < WEEK_MS) return;
-  const reward = wheelRewards[Math.floor(Math.random() * wheelRewards.length)];
+  const wheel = $("#wheel");
+  const button = $("#spinWheelBtn");
+  const rewardIndex = Math.floor(Math.random() * wheelRewards.length);
+  const reward = wheelRewards[rewardIndex];
+  const sector = 360 / wheelRewards.length;
+  const target = (state.wheelRotation || 0) + 360 * 7 + (360 - (rewardIndex * sector + sector / 2));
   state.wheelLastSpin = new Date().toISOString();
-  addReward(reward, "Колесо фортуны");
+  state.wheelRotation = target;
   saveState();
-  renderAll();
-  showModal({ title: "Колесо фортуны", body: `Выпало: ${reward}. Награда добавлена во вкладку «Награды».` });
+  if (button) button.disabled = true;
+  if (wheel) {
+    wheel.classList.add("spinning");
+    wheel.style.transform = `rotate(${target}deg)`;
+  }
+  window.setTimeout(() => {
+    if (wheel) wheel.classList.remove("spinning");
+    addReward(reward, "Колесо фортуны");
+    renderAll();
+    showModal({ title: "Колесо фортуны", body: `Выпало: ${reward}. Награда добавлена во вкладку «Награды».` });
+  }, 3300);
 }
 
 function applyPromo() {
@@ -1050,6 +1083,7 @@ function renderChess(options = {}) {
     turn: "w",
     mode: options.mode || previous.mode || "ai",
     level: options.level || previous.level || 1,
+    style: options.style || previous.style || "balanced",
     playerColor: options.playerColor || previous.playerColor || "w",
     status: "Выбери режим и нажми «Играть»",
   };
@@ -1101,6 +1135,11 @@ function drawChessSetup() {
             ${[1, 2, 3, 4, 5].map((level) => `<option value="${level}" ${chessState.level === level ? "selected" : ""}>${chessLevelLabels[level]}</option>`).join("")}
           </select>
         </label>
+        <label class="range-label">Стиль робота
+          <select id="chessStyle" ${chessState.mode === "two" ? "disabled" : ""}>
+            ${Object.entries(chessStyles).map(([key, style]) => `<option value="${key}" ${chessState.style === key ? "selected" : ""}>${style.label}</option>`).join("")}
+          </select>
+        </label>
         <button id="startChessBtn" class="primary-btn big">Играть</button>
       </aside>
     </div>
@@ -1114,6 +1153,9 @@ function drawChessSetup() {
   });
   $("#chessLevel").addEventListener("change", (e) => {
     chessState.level = Number(e.target.value);
+  });
+  $("#chessStyle").addEventListener("change", (e) => {
+    chessState.style = e.target.value;
   });
   $("#startChessBtn").addEventListener("click", startChessGame);
 }
@@ -1160,14 +1202,14 @@ function drawChess() {
     <div class="chess-wrap">
       <div class="chess-board">${board}</div>
       <aside class="chess-side panel compact">
-        <h3>${chessState.mode === "ai" ? chessLevelLabels[chessState.level] : "Игра для двоих"}</h3>
+        <h3>${chessState.mode === "ai" ? `${chessLevelLabels[chessState.level]} · ${chessStyles[chessState.style].label}` : "Игра для двоих"}</h3>
         <p class="muted">${chessState.mode === "ai" ? `Ты играешь за ${chessState.playerColor === "w" ? "белых" : "чёрных"}.` : "Передавайте ход друг другу на одном устройстве."}</p>
         <p class="muted">Кружочки показывают доступные ходы. Последний ход подсвечивается двумя полями.</p>
         ${chessState.pendingPromotion ? promotionMarkup() : ""}
       </aside>
     </div>
   `;
-  $("#newChess").addEventListener("click", () => renderChess({ mode: chessState.mode, level: chessState.level, playerColor: chessState.playerColor }));
+  $("#newChess").addEventListener("click", () => renderChess({ mode: chessState.mode, level: chessState.level, style: chessState.style, playerColor: chessState.playerColor }));
   $$("[data-sq]").forEach((btn) => btn.addEventListener("click", () => {
     const [r, c] = btn.dataset.sq.split(",").map(Number);
     clickSquare(r, c);
@@ -1458,12 +1500,11 @@ function aiMove() {
 }
 
 function chooseAiMove(moves) {
-  if (chessState.level === 1) return moves[Math.floor(Math.random() * moves.length)];
-  if (chessState.level === 2) {
-    return moves.sort((a, b) => scoreMove(b) - scoreMove(a))[Math.floor(Math.random() * Math.min(3, moves.length))];
-  }
+  const style = chessStyles[chessState.style] || chessStyles.balanced;
   const ordered = moves.sort((a, b) => scoreMove(b) - scoreMove(a));
-  const depth = { 3: 2, 4: 3, 5: 4 }[chessState.level];
+  if (chessState.level === 1) return pickFromTop(ordered, 6, style.random);
+  if (chessState.level === 2) return pickFromTop(ordered, 4, style.random * 0.75);
+  const depth = Math.max(1, { 3: 2, 4: 3, 5: 4 }[chessState.level] + style.depthBonus);
   let best = moves[0];
   let bestScore = -Infinity;
   for (const move of ordered) {
@@ -1474,6 +1515,12 @@ function chooseAiMove(moves) {
     }
   }
   return best;
+}
+
+function pickFromTop(ordered, width, noise) {
+  const pool = ordered.slice(0, Math.min(width, ordered.length));
+  pool.sort((a, b) => scoreMove(b) + Math.random() * noise - (scoreMove(a) + Math.random() * noise));
+  return pool[0] || ordered[0];
 }
 
 function searchAfterMove(game, move, depth, alpha, beta, colorToMove) {
@@ -1503,13 +1550,20 @@ function scoreMove(move) {
 }
 
 function scoreMoveForBoard(board, move) {
+  const style = chessStyles[chessState.style] || chessStyles.balanced;
   const target = board[move.tr][move.tc] || (move.enPassantCapture ? board[move.fr][move.tc] : null);
   const promotion = move.promotion ? 500 : 0;
-  const checkBonus = 0;
-  return (target ? pieceValue[target[1]] * 10 - pieceValue[board[move.fr][move.fc][1]] : 0) + promotion + checkBonus + Math.random() * (chessState.level >= 5 ? 0.01 : 12);
+  const moving = board[move.fr][move.fc];
+  const forward = moving?.[0] === "b" ? move.tr - move.fr : move.fr - move.tr;
+  const center = 14 - (Math.abs(3.5 - move.tr) + Math.abs(3.5 - move.tc)) * 4;
+  const captureScore = target ? pieceValue[target[1]] * 10 - pieceValue[moving[1]] : 0;
+  const attackScore = (forward * 10 + center) * style.attack;
+  const materialScore = captureScore * style.material;
+  return materialScore + promotion + attackScore + Math.random() * (chessState.level >= 5 ? style.random * 0.02 : style.random);
 }
 
 function evaluateBoard(board, perspective) {
+  const style = chessStyles[chessState.style] || chessStyles.balanced;
   let score = 0;
   for (let r = 0; r < 8; r += 1) {
     for (let c = 0; c < 8; c += 1) {
@@ -1520,7 +1574,7 @@ function evaluateBoard(board, perspective) {
       const center = 14 - (Math.abs(3.5 - r) + Math.abs(3.5 - c)) * 4;
       const pawnAdvance = type === "P" ? (color === "w" ? 6 - r : r - 1) * 8 : 0;
       const kingPenalty = type === "K" ? -Math.max(0, 24 - (Math.abs(3.5 - r) + Math.abs(3.5 - c)) * 6) : 0;
-      const value = pieceValue[type] + (type !== "K" ? center : kingPenalty) + pawnAdvance;
+      const value = pieceValue[type] * style.material + (type !== "K" ? center * style.attack : kingPenalty * style.defense) + pawnAdvance;
       score += color === perspective ? value : -value;
     }
   }
