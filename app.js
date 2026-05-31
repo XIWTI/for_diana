@@ -782,8 +782,8 @@ function applyPromo() {
       return;
     }
     state.usedPromos.sun = true;
-    addHearts(4000, "промокод солнышко");
-    $("#promoStatus").textContent = "+4000 hearts начислены.";
+    addHearts(10000, "промокод солнышко");
+    $("#promoStatus").textContent = "+10000 hearts начислены.";
     input.value = "";
     return;
   }
